@@ -1,0 +1,68 @@
+{
+  "images" : [
+    {
+      "filename" : "ChatGPT Image Nov 29, 2025, 11_40_49 PM 9.png",
+      "idiom" : "mac",
+      "scale" : "1x",
+      "size" : "16x16"
+    },
+    {
+      "filename" : "ChatGPT Image Nov 29, 2025, 11_40_49 PM 8.png",
+      "idiom" : "mac",
+      "scale" : "2x",
+      "size" : "16x16"
+    },
+    {
+      "filename" : "ChatGPT Image Nov 29, 2025, 11_40_49 PM 7.png",
+      "idiom" : "mac",
+      "scale" : "1x",
+      "size" : "32x32"
+    },
+    {
+      "filename" : "ChatGPT Image Nov 29, 2025, 11_40_49 PM 6.png",
+      "idiom" : "mac",
+      "scale" : "2x",
+      "size" : "32x32"
+    },
+    {
+      "filename" : "ChatGPT Image Nov 29, 2025, 11_40_49 PM 5.png",
+      "idiom" : "mac",
+      "scale" : "1x",
+      "size" : "128x128"
+    },
+    {
+      "filename" : "ChatGPT Image Nov 29, 2025, 11_40_49 PM 4.png",
+      "idiom" : "mac",
+      "scale" : "2x",
+      "size" : "128x128"
+    },
+    {
+      "filename" : "ChatGPT Image Nov 29, 2025, 11_40_49 PM 3.png",
+      "idiom" : "mac",
+      "scale" : "1x",
+      "size" : "256x256"
+    },
+    {
+      "filename" : "ChatGPT Image Nov 29, 2025, 11_40_49 PM 2.png",
+      "idiom" : "mac",
+      "scale" : "2x",
+      "size" : "256x256"
+    },
+    {
+      "filename" : "ChatGPT Image Nov 29, 2025, 11_40_49 PM 1.png",
+      "idiom" : "mac",
+      "scale" : "1x",
+      "size" : "512x512"
+    },
+    {
+      "filename" : "ChatGPT Image Nov 29, 2025, 11_40_49 PM.png",
+      "idiom" : "mac",
+      "scale" : "2x",
+      "size" : "512x512"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}
