@@ -19,9 +19,6 @@ private var modelScriptRelativePath: String { "model.py" }
 private func resolvePythonPath() -> String? {
     // Use the project's dedicated virtual environment python
     let user = NSUserName()
-    let venvPath = "/Users/\(user)/iMessageAI/venv/bin/python3"
-    if FileManager.default.isExecutableFile(atPath: venvPath) { return venvPath }
-    // Fallback to common system pythons
     let candidates = [
         "/Users/\(user)/miniconda3/bin/python",
         "/Users/\(user)/miniconda3/bin/python3",

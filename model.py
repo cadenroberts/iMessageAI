@@ -1,6 +1,5 @@
 #!/usr/bin/python
 import subprocess
-print("Ollama:", subprocess.run(['which', 'ollama'], capture_output=True, text=True).stdout, "Python:", subprocess.run(['which', 'python'], capture_output=True, text=True).stdout)
 import time
 import json
 import os
@@ -51,7 +50,6 @@ if __name__=='__main__':
         number = (subprocess.run(['sqlite3', path, 'SELECT id FROM handle WHERE ROWID=(SELECT handle_id FROM message ORDER BY date DESC LIMIT 1);'], capture_output=True, text=True).stdout).strip()
         with open('config.json', 'r') as file:
             config = json.load(file)
-        print("Text:", text, " | Number:", number, " | Config:", config['phoneListMode'], " | Phone Numbers:", config['phoneNumbers'])
         if ((config['phoneListMode'] == 'Include' and number in config['phoneNumbers']) or (config['phoneListMode'] == 'Exclude' and number not in config['phoneNumbers'])) and (recent_text != text or recent_number != number):
             recent_text = text
             recent_number = number
