@@ -26,6 +26,9 @@ iMessageAI/
 
 ## 🔍 SETUP
 ```
+cd ~/
+git clone git@github.com:cadenroberts/iMessageAI.git
+cd iMessageAI
 brew install ollama
 open iMessageAI.xcodeproj
 ```
