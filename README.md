@@ -10,7 +10,7 @@ As a full-time researcher and student, I often work in long, uninterrupted stret
 
 ---
 
-
+```
 iMessageAI/
 ├── model.py                      # Core engine: chat.db watcher + System Prompt + LLM calls + JSON parsing
 ├── send_imessage.applescript     # Send message script
@@ -21,7 +21,7 @@ iMessageAI/
 ├── iMessageAI/                   # SwiftUI source files
 ├── iMessageAI.mp4                # Demo video (Git LFS)
 └── README.md
-
+```
 
 
 ## 🔍 SETUP
