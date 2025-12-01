@@ -25,7 +25,7 @@ iMessageAI/
 
 
 ## 🔍 SETUP
-```json
+```
 brew install ollama
 open iMessageAI.xcodeproj
 ```
@@ -34,6 +34,6 @@ In XCode, you can run the app and see the output and logic flow of model.py. To 
 
 Once you have your app you can pin it to your dock and open it there or simply do:
 
-```json
+```
 open iMessageAI.app
 ```
