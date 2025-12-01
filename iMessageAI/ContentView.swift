@@ -118,6 +118,10 @@ struct ContentView: View {
     @State private var generatedReplies: [String: String] = [:]
     // Selected reply mood from Generated Replies
     @State private var selectedReplyMood: String? = nil
+
+    // Edit state for a single generated reply
+    @State private var editingReplyMood: String? = nil
+    @State private var draftReplyText: String = ""
     
     // Sender/message and last chosen reply from replies.json
     @State private var lastSender: String = ""
@@ -157,6 +161,17 @@ struct ContentView: View {
         UNUserNotificationCenter.current().add(request) { _ in }
         // Remember we notified for this specific event
         DispatchQueue.main.async { self.lastNotifiedEmptyReplyID = eventID }
+    }
+
+    // Added helper method per instructions
+    private func performRepliesWrite(_ write: () -> Void) {
+        // Temporarily pause polling to avoid racing with our own write
+        stopRepliesPolling()
+        write()
+        // Resume polling after a short delay to give the other process time to settle
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            self.startRepliesPolling()
+        }
     }
 
     var body: some View {
@@ -436,7 +451,7 @@ struct ContentView: View {
     private var generatedRepliesSection: some View {
         // Break up complex expressions to help the type-checker
         let hasReplies = !generatedReplies.isEmpty
-        let sortedKeys = Array(generatedReplies.keys).sorted()
+        let sortedKeys = Array(generatedReplies.keys).sorted(by: { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending })
 
         return VStack(alignment: .leading, spacing: 12) {
             // Header with sender/message
@@ -492,12 +507,33 @@ struct ContentView: View {
                                     mood: mood,
                                     reply: replyText,
                                     isSelected: isSelected,
+                                    isEditing: editingReplyMood == mood,
+                                    draftText: editingReplyMood == mood ? draftReplyText : replyText,
                                     onTap: {
                                         if selectedReplyMood == mood {
                                             selectedReplyMood = nil
                                         } else {
                                             selectedReplyMood = mood
                                         }
+                                    },
+                                    onEdit: {
+                                        editingReplyMood = mood
+                                        draftReplyText = replyText
+                                    },
+                                    onCancelEdit: {
+                                        if editingReplyMood == mood {
+                                            editingReplyMood = nil
+                                            draftReplyText = ""
+                                        }
+                                    },
+                                    onSaveEdit: { newText in
+                                        generatedReplies[mood] = newText
+                                        persistEditedReply(mood: mood, text: newText)
+                                        editingReplyMood = nil
+                                        draftReplyText = ""
+                                    },
+                                    onDraftChange: { newText in
+                                        draftReplyText = newText
                                     }
                                 )
                             }
@@ -530,7 +566,15 @@ struct ContentView: View {
         let mood: String
         let reply: String
         let isSelected: Bool
+        let isEditing: Bool
+        let draftText: String
         let onTap: () -> Void
+        let onEdit: () -> Void
+        let onCancelEdit: () -> Void
+        let onSaveEdit: (String) -> Void
+        let onDraftChange: (String) -> Void
+
+        @State private var internalDraft: String = ""
 
         var body: some View {
             VStack(alignment: .leading, spacing: 6) {
@@ -539,13 +583,42 @@ struct ContentView: View {
                         Text(mood)
                             .font(.subheadline)
                             .bold()
-                        Text(reply)
-                            .font(.body)
-                            .foregroundStyle(.secondary)
+                        if isEditing {
+                            TextEditor(text: $internalDraft)
+                                .frame(minHeight: 80)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
+                                )
+                                .onChange(of: internalDraft) { _, newValue in
+                                    onDraftChange(newValue)
+                                }
+                                .onAppear { internalDraft = draftText }
+                        } else {
+                            Text(reply)
+                                .font(.body)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                     Spacer()
-                    Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                        .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
+                    if isEditing {
+                        VStack(alignment: .trailing, spacing: 8) {
+                            Button("Cancel") { onCancelEdit() }
+                                .buttonStyle(.plain)
+                            Button("Save") {
+                                onSaveEdit(internalDraft.trimmingCharacters(in: .whitespacesAndNewlines))
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(internalDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        }
+                    } else {
+                        VStack(alignment: .trailing, spacing: 8) {
+                            Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                                .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
+                            Button("Edit") { onEdit() }
+                                .buttonStyle(.plain)
+                        }
+                    }
                 }
             }
             .padding(12)
@@ -557,7 +630,7 @@ struct ContentView: View {
                             .stroke(isSelected ? Color.accentColor : Color.secondary.opacity(0.2), lineWidth: isSelected ? 2 : 1)
                     )
             )
-            .onTapGesture { onTap() }
+            .onTapGesture { if !isEditing { onTap() } }
         }
     }
 
@@ -742,11 +815,11 @@ struct ContentView: View {
             let fileURL = fixedConfigFileURL()
             try jsonData.write(to: fileURL, options: .atomic)
 #if DEBUG
-            print("Wrote config.json to: \(fileURL.path)")
+            print("Wrote config.json to: \(fileURL.path)\n")
 #endif
         } catch {
 #if DEBUG
-            print("Failed to write config.json: \(error)")
+            print("Failed to write config.json: \(error)\n")
 #endif
         }
     }
@@ -804,24 +877,24 @@ struct ContentView: View {
                     return ""
                 }()
                 var repliesDict: [String: String] = [:]
-                if let dict = anyJSON["replies"] as? [String: String] {
-                    repliesDict = dict
-                    repliesDict.removeValue(forKey: "time")
-                } else if let dict = anyJSON as? [String: String] {
-                    // Back-compat: file was a flat mood->text dictionary
-                    repliesDict = dict
-                    // Remove keys that are not moods if present
-                    repliesDict.removeValue(forKey: "sender")
-                    repliesDict.removeValue(forKey: "message")
-                    repliesDict.removeValue(forKey: "Reply")
-                    repliesDict.removeValue(forKey: "reply")
-                    repliesDict.removeValue(forKey: "time")
+                // Collect top-level mood keys (e.g., "Loving", "Angry", etc.) into repliesDict
+                for (k, v) in anyJSON {
+                    if let text = v as? String, k != "sender", k != "message", k != "Reply", k != "reply", k != "time", k != "replies" {
+                        repliesDict[k] = text
+                    }
+                }
+                // Back-compat: if nested replies exists and has keys not present top-level, merge them in (but do not override top-level)
+                if let nested = anyJSON["replies"] as? [String: String] {
+                    for (k, v) in nested where repliesDict[k] == nil {
+                        repliesDict[k] = v
+                    }
                 }
 
                 DispatchQueue.main.async {
                     self.lastSender = sender
                     self.lastMessage = message
                     self.lastReply = replyValue
+                    // replies.json is the source of truth: assign directly
                     self.generatedReplies = repliesDict
                     self.generationTimeSeconds = timeValue
 
@@ -842,66 +915,113 @@ struct ContentView: View {
 
     private func saveSelectedReply() {
         guard let mood = selectedReplyMood else { return }
+        let replyText = generatedReplies[mood] ?? mood
         guard let url = repliesFileURL() else { return }
-        do {
-            var dict: [String: Any] = [:]
-            if FileManager.default.fileExists(atPath: url.path) {
-                let data = try Data(contentsOf: url)
-                if let existing = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
-                    dict = existing
+        performRepliesWrite {
+            do {
+                var dict: [String: Any] = [:]
+                if FileManager.default.fileExists(atPath: url.path) {
+                    let data = try Data(contentsOf: url)
+                    if let existing = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                        dict = existing
+                    }
                 }
-            }
-            dict["Reply"] = mood
-            self.lastReply = mood
-            let newData = try JSONSerialization.data(withJSONObject: dict, options: [.prettyPrinted, .sortedKeys])
-            try newData.write(to: url, options: .atomic)
-        } catch {
+                // Overwrite the top-level mood key instead of nested replies dictionary
+                dict[mood] = replyText
+                // Write the selected mood under Reply key (as before)
+                dict["Reply"] = mood
+                dict["reply"] = replyText
+
+                let newData = try JSONSerialization.data(withJSONObject: dict, options: [.prettyPrinted, .sortedKeys])
+                try writeAtomicallyReplacing(url: url, data: newData)
+                self.lastReply = mood
+            } catch {
 #if DEBUG
-            print("Failed to save selected reply to replies.json: \(error)")
+                print("Failed to save selected reply to replies.json: \(error)")
 #endif
+            }
         }
     }
     
     private func saveRefreshRequest() {
         guard let url = repliesFileURL() else { return }
-        do {
-            var dict: [String: Any] = [:]
-            if FileManager.default.fileExists(atPath: url.path) {
-                let data = try Data(contentsOf: url)
-                if let existing = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
-                    dict = existing
+        performRepliesWrite {
+            do {
+                var dict: [String: Any] = [:]
+                if FileManager.default.fileExists(atPath: url.path) {
+                    let data = try Data(contentsOf: url)
+                    if let existing = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                        dict = existing
+                    }
                 }
-            }
-            dict["Reply"] = "Refresh"
-            self.lastReply = "Refresh"
-            let newData = try JSONSerialization.data(withJSONObject: dict, options: [.prettyPrinted, .sortedKeys])
-            try newData.write(to: url, options: .atomic)
-        } catch {
+                dict["Reply"] = "Refresh"
+                self.lastReply = "Refresh"
+                let newData = try JSONSerialization.data(withJSONObject: dict, options: [.prettyPrinted, .sortedKeys])
+                try writeAtomicallyReplacing(url: url, data: newData)
+            } catch {
 #if DEBUG
-            print("Failed to save refresh request to replies.json: \(error)")
+                print("Failed to save refresh request to replies.json: \(error)")
 #endif
+            }
         }
     }
     
     private func saveIgnoreRequest() {
         guard let url = repliesFileURL() else { return }
-        do {
-            var dict: [String: Any] = [:]
-            if FileManager.default.fileExists(atPath: url.path) {
-                let data = try Data(contentsOf: url)
-                if let existing = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
-                    dict = existing
+        performRepliesWrite {
+            do {
+                var dict: [String: Any] = [:]
+                if FileManager.default.fileExists(atPath: url.path) {
+                    let data = try Data(contentsOf: url)
+                    if let existing = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                        dict = existing
+                    }
                 }
-            }
-            dict["Reply"] = "Ignore"
-            self.lastReply = "Ignore"
-            let newData = try JSONSerialization.data(withJSONObject: dict, options: [.prettyPrinted, .sortedKeys])
-            try newData.write(to: url, options: .atomic)
-        } catch {
+                dict["Reply"] = "Ignore"
+                self.lastReply = "Ignore"
+                let newData = try JSONSerialization.data(withJSONObject: dict, options: [.prettyPrinted, .sortedKeys])
+                try writeAtomicallyReplacing(url: url, data: newData)
+            } catch {
 #if DEBUG
-            print("Failed to save ignore request to replies.json: \(error)")
+                print("Failed to save ignore request to replies.json: \(error)")
 #endif
+            }
         }
+    }
+
+    private func persistEditedReply(mood: String, text: String) {
+        guard let url = repliesFileURL() else { return }
+        performRepliesWrite {
+            do {
+                var dict: [String: Any] = [:]
+                if FileManager.default.fileExists(atPath: url.path) {
+                    let data = try Data(contentsOf: url)
+                    if let existing = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                        dict = existing
+                    }
+                }
+                // Overwrite the top-level mood key instead of nested replies dictionary
+                dict[mood] = text
+                if let selected = dict["Reply"] as? String, selected == mood {
+                    dict["reply"] = text
+                }
+                // Preserve other keys like sender/message/Reply/time
+                let newData = try JSONSerialization.data(withJSONObject: dict, options: [.prettyPrinted, .sortedKeys])
+                try writeAtomicallyReplacing(url: url, data: newData)
+            } catch {
+#if DEBUG
+                print("Failed to persist edited reply for \(mood): \(error)")
+#endif
+            }
+        }
+    }
+
+    private func writeAtomicallyReplacing(url: URL, data: Data) throws {
+        let dir = url.deletingLastPathComponent()
+        let tmpURL = dir.appendingPathComponent(UUID().uuidString + ".tmp")
+        try data.write(to: tmpURL, options: .atomic)
+        // Use FileManager replace to ensure atomicity and preserve file attributes when possible
+        _ = try FileManager.default.replaceItemAt(url, withItemAt: tmpURL, backupItemName: nil, options: .usingNewMetadataOnly)
     }
 
     private func startRepliesPolling() {
@@ -995,11 +1115,11 @@ struct ContentView: View {
             try process.run()
             self.modelProcess = process
 #if DEBUG
-            print("Started model.py at: \(scriptURL.path)")
+            print("Started model.py at: \(scriptURL.path)\n")
 #endif
         } catch {
 #if DEBUG
-            print("Failed to start model.py: \(error)")
+            print("Failed to start model.py: \(error)\n")
 #endif
         }
     }
