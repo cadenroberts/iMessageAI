@@ -16,9 +16,11 @@ iMessageAI/
 ├── send_imessage.applescript     # Send message script
 ├── config.json                   # Personality + moods config
 ├── replies.json                  # Holds possible text responses and communication signals between Swift/Python
+├── problemstatement.txt          # Project problem statement
 ├── iMessageAI.xcodeproj          # Swift app
 ├── iMessageAI.app                # Built by Xcode
 ├── iMessageAI/                   # SwiftUI source files
+├── iMessageAI.pdf                # Write up
 ├── iMessageAI.mp4                # Demo video (Git LFS)
 └── README.md
 ```
