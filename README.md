@@ -14,24 +14,24 @@ macOS application that monitors iMessage for incoming texts, generates mood-cate
 ## Architecture
 
 ```
-┌──────────────┐     ┌──────────────────┐     ┌───────────────┐
-│  chat.db     │────▶│   model.py       │────▶│  replies.json │
-│  (SQLite)    │     │  (Python daemon)  │     │  (IPC buffer) │
-│  iMessage DB │     │  - DB polling     │     └───────┬───────┘
+┌──────────────┐     ┌───────────────────┐     ┌────────────────┐
+│  chat.db     │────▶│   model.py        │────▶│  replies.json  │
+│  (SQLite)    │     │  (Python daemon)  │     │  (IPC buffer)  │
+│  iMessage DB │     │  - DB polling     │     └───────┬────────┘
 └──────────────┘     │  - System prompt  │             │
                      │  - LLM inference  │             ▼
-                     │  - JSON parsing   │     ┌───────────────┐
-                     └──────────────────┘     │  SwiftUI App  │
-                                              │  - Reply list  │
-                     ┌──────────────────┐     │  - Config UI   │
-                     │  config.json     │     │  - Send action │
-                     │  - Name          │     └───────┬───────┘
-                     │  - Personality   │             │
-                     │  - Mood system   │             ▼
-                     │  - Phone filter  │     ┌───────────────┐
-                     └──────────────────┘     │  AppleScript   │
-                                              │  send_imessage │
-                                              └───────────────┘
+                     │  - JSON parsing   │     ┌─────────────────┐
+                     └───────────────────┘     │  SwiftUI App    │
+                                               │  - Reply list   │
+                     ┌───────────────────┐     │  - Config UI    │
+                     │  config.json      │     │  - Send action  │
+                     │  - Name           │     └───────┬─────────┘
+                     │  - Personality    │             │
+                     │  - Mood system    │             ▼
+                     │  - Phone filter   │     ┌──────────────────┐
+                     └───────────────────┘     │  AppleScript     │
+                                               │  send_imessage   │
+                                               └──────────────────┘
 ```
 
 **Staged execution:**
