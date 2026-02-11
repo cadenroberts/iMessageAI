@@ -3,32 +3,24 @@
 ## Component Diagram
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                        macOS System                             │
-│                                                                 │
-│  ┌─────────────┐    ┌──────────────┐    ┌───────────────────┐  │
-│  │ Messages.app │    │   Ollama     │    │   ~/iMessageAI/   │  │
-│  │             │    │   Server     │    │                   │  │
-│  │  chat.db ◄──┼────┼── model.py ──┼───▶│  config.json     │  │
-│  │             │    │   ▲          │    │  replies.json    │  │
-│  │  ◄──────────┼────┼───┼──────────┼────┼── model.py       │  │
-│  │  AppleScript│    │   │ HTTP     │    │  send_imessage   │  │
-│  └─────────────┘    │   │ localhost│    └────────┬──────────┘  │
-│                     └───┼──────────┘             │             │
-│                         │                        │             │
-│                     ┌───┴────────────────────────┴──────────┐  │
-│                     │         SwiftUI Application           │  │
-│                     │                                       │  │
-│                     │  ContentView                          │  │
-│                     │  ├── Config UI (name, moods, phones)  │  │
-│                     │  ├── Reply display + selection         │  │
-│                     │  ├── Process manager (model.py)        │  │
-│                     │  └── File I/O (config.json,           │  │
-│                     │       replies.json)                    │  │
-│                     │                                       │  │
-│                     │  iMessageAIApp (@main)                │  │
-│                     └───────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────┘
+┌──────────────┐     ┌──────────────────┐     ┌───────────────┐
+│  chat.db     │────▶│   model.py       │────▶│  replies.json │
+│  (SQLite)    │     │  (Python daemon)  │     │  (IPC buffer) │
+│  iMessage DB │     │  - DB polling     │     └───────┬───────┘
+└──────────────┘     │  - System prompt  │             │
+                     │  - LLM inference  │             ▼
+                     │  - JSON parsing   │     ┌───────────────┐
+                     └──────────────────┘     │  SwiftUI App  │
+                                              │  - Reply list  │
+                     ┌──────────────────┐     │  - Config UI   │
+                     │  config.json     │     │  - Send action │
+                     │  - Name          │     └───────┬───────┘
+                     │  - Personality   │             │
+                     │  - Mood system   │             ▼
+                     │  - Phone filter  │     ┌───────────────┐
+                     └──────────────────┘     │  AppleScript   │
+                                              │  send_imessage │
+                                              └───────────────┘
 ```
 
 ## Execution Flow
