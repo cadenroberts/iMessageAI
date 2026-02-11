@@ -3,3 +3,9 @@ __pycache__/
 .venv/
 node_modules/
 .cursor/
+.DS_Store
+*.xcuserstate
+xcuserdata/
+replies.json
+*.mp4
+*.pdf
