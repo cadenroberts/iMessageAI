@@ -42,3 +42,17 @@ Once you have your app you can pin it to your dock and open it there or simply d
 ```
 open iMessageAI.app
 ```
+
+## ARCHITECTURE
+
+```mermaid
+flowchart TD
+    Texts["chat.db"] -->|"Incoming message"| Model["model.py"]
+    Config["config.json"] -->|"Inference context"| Model["model.py"]
+    Model["model.py"] -->|"Incoming message and AI replies"| Replies["replies.json"]
+    Model["model.py"] -->|"Send message"| Applescript["send_imessage.applescript"]
+    Replies["replies.json"] -->|"Incoming message and AI replies"| UI["iMessageAI/ContentView.swift"]
+    Replies["replies.json"] -->|"AI reply or ignore"| Model["model.py"]
+    UI["iMessageAI/ContentView.swift"] -->|"AI reply or ignore"| Replies["replies.json"]
+    UI["iMessageAI/ContentView.swift"] -->|"Inference context"| Config["config.json"]
+```
