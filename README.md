@@ -1,10 +1,10 @@
-# 📱 iMessageAI
+# iMessageAI
 
 As a full-time researcher and student, I often work in long, uninterrupted stretches. Friends, family, and loved ones message me, but I frequently forget to respond or reply hours later. This is a real personal bottleneck. Since iMessage is deeply integrated into macOS, building an AI assistant that monitors messages, surfaces replies, and generates mood-aligned drafts directly improves my daily communication without breaking focus.
 
 ---
 
-# 🚀 iMessageAI — AI-Powered iMessage Auto-Replier
+# iMessageAI — AI-Powered iMessage Auto-Replier
 
 **iMessageAI** is a macOS tool that monitors incoming iMessages, analyzes them, and generates multiple suggested replies using a customizable personality and mood system. The suggestions are powered by a local LLM (Llama 3.1 8B through Ollama) and can be quickly sent through the app.
 
@@ -26,7 +26,7 @@ iMessageAI/
 ```
 
 
-## 🔍 SETUP
+## SETUP
 ```
 cd ~/
 git clone git@github.com:cadenroberts/iMessageAI.git
